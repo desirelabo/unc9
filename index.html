@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#000000">
+<title>Obsidian Mirror: Manual Control</title>
+<style>
+    /* --- THEME DEFINITION --- */
+    :root {
+        --void: #000000;
+        --gold: #B89F64;
+        --silver: #A0A0A0;
+        --alert: #800000;
+        --glass: rgba(255, 255, 255, 0.03);
+        --font: "Hiragino Mincho ProN", serif;
+    }
+
+    body, html {
+        margin: 0; padding: 0; height: 100%;
+        background-color: var(--void); color: var(--gold);
+        font-family: var(--font); overflow: hidden;
+        -webkit-user-select: none; user-select: none; touch-action: none;
+        display: flex; flex-direction: column; align-items: center;
+    }
+
+    /* --- LAYERS --- */
+    #sky-layer { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+    .meteor {
+        position: absolute; width: 2px; height: 100px;
+        background: linear-gradient(to bottom, transparent, #fff);
+        transform: rotate(-45deg); opacity: 0;
+    }
+    .meteor.active { animation: meteor-fall 1.5s linear forwards; }
+    @keyframes meteor-fall {
+        0% { transform: translate(50vw, -50vh) rotate(-45deg); opacity: 1; }
+        100% { transform: translate(-50vw, 50vh) rotate(-45deg); opacity: 0; }
+    }
+
+    #watermark {
+        position: fixed; top: 20px; right: 20px;
+        font-size: 0.5rem; letter-spacing: 0.2em; opacity: 0.2;
+        writing-mode: vertical-rl; pointer-events: none; z-index: 1;
+    }
+
+    /* --- STAGE & MATRIX --- */
+    .stage {
+        position: relative; width: 100%; flex: 1;
+        display: flex; justify-content: center; align-items: center;
+        z-index: 10;
+    }
+
+    #threads {
+        position: absolute; width: 90vw; height: 90vw; max-width: 360px;
+        pointer-events: none; z-index: 5;
+    }
+    .thread { stroke: var(--gold); stroke-width: 0.5; opacity: 0.1; transition: 0.5s; }
+    .thread.active { stroke: var(--gold); stroke-width: 1.5; opacity: 0.8; filter: drop-shadow(0 0 5px var(--gold)); }
+    .thread.reach { stroke: var(--alert); stroke-width: 2; opacity: 1; animation: pulse-thread 0.2s infinite; }
+    @keyframes pulse-thread { 0%,100%{opacity:0.5;} 50%{opacity:1;} }
+
+    .matrix {
+        display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;
+        width: 85vw; max-width: 340px; aspect-ratio: 1/1;
+        position: relative; z-index: 10;
+    }
+
+    .cell {
+        display: flex; justify-content: center; align-items: center;
+        font-size: 2.8rem; font-weight: 200;
+        background: var(--glass); border-radius: 50%;
+        backdrop-filter: blur(5px); transition: transform 0.3s, color 0.5s;
+        text-shadow: 0 0 10px rgba(0,0,0,0.5);
+    }
+    
+    .cell:nth-child(5) {
+        border: 1px solid rgba(184, 159, 100, 0.3);
+        color: #fff; text-shadow: 0 0 20px var(--gold);
+        animation: breathe 5s infinite ease-in-out;
+    }
+    @keyframes breathe { 0%,100%{transform:scale(1); opacity:0.8;} 50%{transform:scale(1.05); opacity:1;} }
+
+    .spinning { filter: blur(5px); opacity: 0.4; transform: scale(0.9); }
+    .crushed { animation: shatter 0.4s forwards; pointer-events: none; }
+    @keyframes shatter { 100% { transform: scale(1.5) rotate(20deg); opacity: 0; filter: blur(10px); } }
+
+    /* --- CONTROLS --- */
+    .control-deck {
+        position: absolute; bottom: 0; width: 100%; height: 30%;
+        background: linear-gradient(to top, rgba(184,159,100,0.08), transparent);
+        display: flex; flex-direction: column; justify-content: center; align-items: center;
+        z-index: 20;
+    }
+    
+    .resonance-btn {
+        width: 80%; height: 60%; 
+        display: flex; flex-direction: column;
+        justify-content: center; align-items: center;
+        border: 1px solid rgba(184,159,100,0.2);
+        border-radius: 40px;
+        background: rgba(0,0,0,0.5);
+        backdrop-filter: blur(4px);
+        transition: all 0.2s; cursor: pointer;
+    }
+    .resonance-btn:active { background: rgba(184,159,100,0.1); transform: scale(0.98); }
+    
+    .btn-text { font-size: 1.2rem; letter-spacing: 0.5em; color: var(--gold); margin-bottom: 5px; transition: color 0.2s; }
+    .sub-label { font-size: 0.6rem; letter-spacing: 0.2em; opacity: 0.3; font-family: monospace; }
+    
+    /* Stop State Style */
+    .resonance-btn.stopping .btn-text { color: #fff; text-shadow: 0 0 10px #fff; }
+
+    /* --- CERTIFICATE OVERLAY --- */
+    #night-overlay {
+        position: fixed; inset: 0; background: #000; z-index: 100;
+        display: none; flex-direction: column; align-items: center; justify-content: center;
+        opacity: 0; transition: opacity 1.5s;
+    }
+
+    .certificate-frame {
+        position: relative; width: 80%; max-width: 400px; padding: 40px 20px;
+        border: 1px solid var(--gold);
+        background: radial-gradient(circle, rgba(20,20,20,1), #000);
+        box-shadow: 0 0 30px rgba(184,159,100,0.1), inset 0 0 50px #000;
+        text-align: center; margin-bottom: 30px;
+    }
+    .cert-title { font-size: 1.4rem; letter-spacing: 0.4em; margin-bottom: 30px; color: var(--gold); border-bottom: 1px solid rgba(184,159,100,0.3); display: inline-block; padding-bottom: 10px; }
+    .cert-body { font-size: 0.85rem; line-height: 2.2; color: #ccc; font-feature-settings: "palt"; }
+    .sacred-word { font-size: 1.4rem; font-weight: bold; color: #fff; text-shadow: 0 0 10px var(--gold); margin: 0 5px; }
+    .purity-display { margin-top: 20px; font-size: 2rem; color: #fff; font-family: monospace; text-shadow: 0 0 15px var(--gold); }
+    .pearl-gallery { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; max-width: 300px; margin-top: 10px; }
+    .pearl { width: 30px; height: 30px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #fff, var(--gold)); box-shadow: 0 0 10px rgba(184,159,100,0.3); cursor: pointer; }
+    .crack { position: fixed; background: #fff; height: 1px; width: 100px; opacity: 0.5; pointer-events: none; z-index: 101; }
+</style>
+</head>
+<body>
+
+<div id="sky-layer"></div>
+<div id="watermark">BEST PURITY <span id="best-score">--</span>%</div>
+
+<div class="stage">
+    <svg id="threads" viewBox="0 0 100 100">
+        <line id="t-0" x1="15" y1="15" x2="50" y2="50" class="thread"/>
+        <line id="t-1" x1="50" y1="15" x2="50" y2="50" class="thread"/>
+        <line id="t-2" x1="85" y1="15" x2="50" y2="50" class="thread"/>
+        <line id="t-3" x1="15" y1="50" x2="50" y2="50" class="thread"/>
+        <line id="t-5" x1="85" y1="50" x2="50" y2="50" class="thread"/>
+        <line id="t-6" x1="15" y1="85" x2="50" y2="50" class="thread"/>
+        <line id="t-7" x1="50" y1="85" x2="50" y2="50" class="thread"/>
+        <line id="t-8" x1="85" y1="85" x2="50" y2="50" class="thread"/>
+    </svg>
+    <div class="matrix" id="grid"></div>
+</div>
+
+<div class="control-deck">
+    <div class="resonance-btn" id="action-btn">
+        <div class="btn-text" id="btn-label">START</div>
+        <div class="sub-label">SPINS: <span id="spin-cnt">0</span> / 25</div>
+    </div>
+</div>
+
+<div id="night-overlay"></div>
+
+<script>
+/**
+ * Petal of the Void: Manual Control Edition
+ */
+
+/* --- DATA MODULE --- */
+const Data = {
+    spins: parseInt(localStorage.getItem('om_spins') || 0),
+    points: parseInt(localStorage.getItem('om_points') || 0),
+    best: parseInt(localStorage.getItem('om_best') || 0),
+    pearls: JSON.parse(localStorage.getItem('om_pearls') || '[]'),
+    max: 25,
+    lastWord: "無",
+    
+    // SSR (Ends with NKO usually)
+    divine: ["うんこ", "ちんこ", "まんこ", "ぱんこ", "あんこ", "さんこ", "きんこ", "いんこ", "わんこ", "げんこ"],
+    // SR
+    reality: ["てんき", "げんき", "りんご", "だんご", "きんご", "ぶんこ", "はんこ"],
+    
+    chars: "あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわを",
+
+    save() {
+        localStorage.setItem('om_spins', this.spins);
+        localStorage.setItem('om_points', this.points);
+        localStorage.setItem('om_best', this.best);
+        localStorage.setItem('om_pearls', JSON.stringify(this.pearls));
+    },
+    getPurity() {
+        return this.spins === 0 ? 100 : Math.min(100, Math.floor((this.points / (this.spins * 20)) * 100));
+    }
+};
+
+/* --- AUDIO & FX --- */
+const FX = {
+    ctx: null,
+    init() { if(!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); },
+    tone(f, type, d, v) {
+        if(!this.ctx) return;
+        const o = this.ctx.createOscillator(); const g = this.ctx.createGain();
+        o.type = type; o.frequency.setValueAtTime(f, this.ctx.currentTime);
+        g.gain.setValueAtTime(v, this.ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + d);
+        o.connect(g); g.connect(this.ctx.destination);
+        o.start(); o.stop(this.ctx.currentTime + d);
+    },
+    vibe(p) { if(navigator.vibrate) navigator.vibrate(p); },
+    meteor() {
+        const m = document.createElement('div'); m.className = 'meteor active';
+        m.style.top = Math.random() * 20 + '%'; m.style.left = Math.random() * 50 + '%';
+        document.getElementById('sky-layer').appendChild(m);
+        setTimeout(() => m.remove(), 1500);
+    }
+};
+
+/* --- UI RENDERER --- */
+const UI = {
+    cells: [],
+    threads: [],
+    btnLabel: document.getElementById('btn-label'),
+    btn: document.getElementById('action-btn'),
+
+    init() {
+        const grid = document.getElementById('grid');
+        grid.innerHTML = '';
+        for(let i=0; i<9; i++) {
+            const el = document.createElement('div'); el.className = 'cell';
+            if(i === 4) el.innerText = 'ん';
+            else { el.innerText = ''; el.onclick = () => Input.flick(i); }
+            grid.appendChild(el);
+            this.cells[i] = el;
+            if(i !== 4) this.threads[i] = document.getElementById(`t-${i}`);
+        }
+        this.updateCount();
+        document.getElementById('best-score').innerText = Data.best;
+    },
+
+    updateCount() { document.getElementById('spin-cnt').innerText = Data.spins; },
+    setCell(i, c, s) { 
+        this.cells[i].innerText = c; 
+        s ? this.cells[i].classList.add('spinning') : this.cells[i].classList.remove('spinning'); 
+    },
+    setThread(i, s) { if(this.threads[i]) this.threads[i].className = 'thread ' + (s || ''); },
+    
+    setBtnState(state) {
+        if(state === 'STOP') {
+            this.btnLabel.innerText = 'STOP';
+            this.btn.classList.add('stopping');
+        } else {
+            this.btnLabel.innerText = 'START';
+            this.btn.classList.remove('stopping');
+        }
+    },
+
+    renderCert() {
+        const ov = document.getElementById('night-overlay');
+        ov.style.display = 'flex';
+        setTimeout(() => ov.style.opacity = 1, 50);
+        const d = new Date().toLocaleDateString('ja-JP');
+        
+        ov.innerHTML = `
+            <div class="certificate-frame">
+                <div class="cert-title">虚無の証明書</div>
+                <div class="cert-body">
+                    此処に証す。<br>汝は本日、二十五の試練を経て<br>俗世の意味より解き放たれた。<br><br>
+                    殊に、最後に刻みし<br>【<span class="sacred-word">${Data.lastWord}</span>】<br>
+                    の響きは、真なる深淵の境地なり。<br><br>
+                    到達純度<div class="purity-display">${Data.getPurity()}%</div>
+                </div>
+            </div>
+            <div style="font-size:0.6rem; opacity:0.5; margin-bottom:10px;">${d} - Obsidian Archive</div>
+            <div class="pearl-gallery" id="pearl-box"></div>
+            <div style="margin-top:40px; font-size:0.5rem; opacity:0.2; cursor:pointer;" onclick="Input.resetGame()">深淵を10回叩き、刻を戻す</div>
+        `;
+        const box = document.getElementById('pearl-box');
+        Data.pearls.forEach(w => {
+            const p = document.createElement('div'); p.className = 'pearl';
+            p.onclick = (e) => { e.stopPropagation(); FX.tone(600, 'sine', 1, 0.2); FX.vibe(50); };
+            box.appendChild(p);
+        });
+    }
+};
+
+/* --- INPUT HANDLING --- */
+const Input = {
+    resetTaps: 0,
+    init() {
+        UI.btn.addEventListener('pointerdown', () => App.handleBtn());
+        window.addEventListener('devicemotion', e => {
+            if(!App.isSpinning) return;
+            const a = e.accelerationIncludingGravity;
+            if(a && (Math.abs(a.x)>25 || Math.abs(a.y)>25)) {
+                FX.vibe(20);
+                document.body.style.transform = `translate(${Math.random()*4-2}px, ${Math.random()*4-2}px)`;
+                setTimeout(()=>document.body.style.transform='none', 50);
+            }
+        });
+    },
+    flick(i) {
+        if(App.isSpinning) return;
+        UI.cells[i].classList.add('crushed');
+        FX.tone(100, 'square', 0.1, 0.1); FX.vibe(10);
+    },
+    resetGame() {
+        this.resetTaps++; FX.vibe(this.resetTaps * 5);
+        if(this.resetTaps >= 10) {
+            FX.vibe([100, 50, 500]);
+            localStorage.clear();
+            localStorage.setItem('om_best', Data.best);
+            location.reload();
+        } else if(this.resetTaps > 5) {
+            const c = document.createElement('div'); c.className = 'crack';
+            c.style.width = '100px'; c.style.transform = `rotate(${Math.random()*360}deg)`;
+            c.style.top = Math.random()*80+10+'%'; c.style.left = Math.random()*80+10+'%';
+            document.body.appendChild(c);
+        }
+    }
+};
+
+/* --- CORE ENGINE --- */
+const App = {
+    state: 'IDLE', // IDLE, SPINNING, STOPPING
+    intervals: [],
+
+    init() {
+        UI.init();
+        Input.init();
+        if(Data.spins >= Data.max) UI.renderCert();
+    },
+
+    handleBtn() {
+        if(Data.spins >= Data.max) return;
+        FX.init();
+        
+        if(this.state === 'IDLE') {
+            this.startSpin();
+        } else if(this.state === 'SPINNING') {
+            this.stopSpin();
+        }
+    },
+
+    startSpin() {
+        this.state = 'SPINNING';
+        Data.spins++;
+        Data.save();
+        UI.updateCount();
+        UI.setBtnState('STOP');
+
+        // Reset Visuals
+        UI.cells.forEach(c => c.classList.remove('crushed'));
+        UI.threads.forEach(t => t?.setAttribute('class', 'thread'));
+
+        // Infinite Spin Loop
+        [0,1,2,3,5,6,7,8].forEach(i => {
+            this.intervals[i] = setInterval(() => {
+                UI.setCell(i, Data.chars[Math.floor(Math.random()*Data.chars.length)], true);
+            }, 60);
+        });
+    },
+
+    async stopSpin() {
+        if(this.state !== 'SPINNING') return;
+        this.state = 'STOPPING';
+        
+        // Generate Target
+        const target = Array(9).fill('').map(() => Data.chars[Math.floor(Math.random()*Data.chars.length)]);
+        target[4] = 'ん';
+
+        // Stop Sequence: Ends first for Reach check
+        const order = [5, 7, 8, 6]; // Ends of lines
+        let reach = false;
+
+        for (let i of order) {
+            clearInterval(this.intervals[i]);
+            UI.setCell(i, target[i], false);
+            FX.tone(200, 'sine', 0.05, 0.05);
+
+            if(target[i] === 'こ') {
+                UI.setThread(i, 'reach');
+                reach = true;
+                FX.tone(100, 'sawtooth', 0.5, 0.1);
+                FX.vibe([15, 15]);
+            }
+            await new Promise(r => setTimeout(r, 150)); // Fast stop
+        }
+
+        if(reach) await new Promise(r => setTimeout(r, 600)); // Drama pause
+
+        // Stop Starts
+        [3, 1, 0, 2].forEach(i => {
+            clearInterval(this.intervals[i]);
+            UI.setCell(i, target[i], false);
+        });
+        FX.tone(300, 'sine', 0.1, 0.1);
+
+        this.judge(target);
+        
+        this.state = 'IDLE';
+        UI.setBtnState('START');
+        
+        if(Data.spins >= Data.max) setTimeout(() => UI.renderCert(), 2000);
+    },
+
+    judge(grid) {
+        const lines = [
+            {idx: [3,4,5], w: grid[3]+'ん'+grid[5]},
+            {idx: [1,4,7], w: grid[1]+'ん'+grid[7]},
+            {idx: [0,4,8], w: grid[0]+'ん'+grid[8]},
+            {idx: [2,4,6], w: grid[2]+'ん'+grid[6]}
+        ];
+        
+        let best = 'VOID';
+        Data.lastWord = lines[0].w; 
+
+        lines.forEach(l => {
+            let type = 'VOID';
+            if(Data.divine.includes(l.w)) type = 'DIVINE';
+            else if(Data.reality.includes(l.w)) type = 'REALITY';
+
+            if(type !== 'VOID') {
+                UI.setThread(l.idx[0], 'active'); UI.setThread(l.idx[2], 'active');
+                if(type === 'DIVINE') {
+                    best = 'DIVINE'; Data.points += 20; Data.lastWord = l.w;
+                    if(!Data.pearls.includes(l.w)) Data.pearls.push(l.w);
+                } else {
+                    Data.points += 5;
+                    if(best !== 'DIVINE') best = 'REALITY';
+                }
+            } else Data.points += 1;
+        });
+
+        if(best === 'DIVINE') {
+            FX.tone(523, 'triangle', 2, 0.3); FX.tone(659, 'triangle', 2, 0.3);
+            FX.vibe([50, 50, 50, 50, 500]);
+        } else if(best === 'REALITY') {
+            FX.tone(880, 'sine', 0.5, 0.1); FX.vibe(30);
+        }
+
+        const p = Data.getPurity();
+        if(p > Data.best && Data.spins > 5) { Data.best = p; FX.meteor(); }
+        Data.save();
+    }
+};
+
+window.onload = () => App.init();
+</script>
+</body>
+</html>
