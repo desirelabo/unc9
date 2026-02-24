@@ -1,0 +1,14 @@
+{
+  "name": "brass-oracle",
+  "version": "1.0.0",
+  "description": "The Brass Oracle: Masterpiece Edition with enhanced Phase 1 features",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}

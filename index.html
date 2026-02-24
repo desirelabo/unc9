@@ -185,10 +185,100 @@
     .plaque-score:active { background: rgba(197, 160, 89, 0.1); transform: scale(0.98); }
     
     .crack { position: absolute; background: #fff; height: 1px; width: 120px; opacity: 0.6; pointer-events: none; box-shadow: 0 0 5px #fff; }
+
+    /* --- 6. PHASE 2: COLLECTION UI --- */
+    .tab-container {
+        position: fixed; top: 0; left: 0; right: 0; height: 50px;
+        background: linear-gradient(180deg, rgba(42,31,26,0.95), rgba(42,31,26,0.7));
+        display: flex; gap: 0; z-index: 50; border-bottom: 1px solid var(--brass-dark);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    }
+    .tab-btn {
+        flex: 1; background: none; border: none; color: var(--brass-mid);
+        font-family: var(--font); font-size: 0.8rem; letter-spacing: 0.2em;
+        cursor: pointer; transition: all 0.3s;
+        border-bottom: 2px solid transparent;
+    }
+    .tab-btn.active { color: var(--brass-light); border-bottom-color: var(--brass-light); }
+    .tab-btn:hover { color: var(--brass-light); }
+
+    .view-container {
+        position: fixed; inset: 50px 0 0 0; overflow-y: auto; display: none;
+        padding: 20px; background: var(--bg-dark);
+    }
+    .view-container.active { display: block; animation: fadeIn 0.3s; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    #game-view { display: block; } /* Game view is always visible initially */
+
+    .stats-grid {
+        display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px;
+    }
+    .stat-card {
+        background: linear-gradient(135deg, rgba(166,138,92,0.1), rgba(42,31,26,0.8));
+        border: 1px solid var(--brass-dark); border-radius: 8px;
+        padding: 15px; text-align: center;
+    }
+    .stat-value { font-size: 1.8rem; font-weight: bold; color: var(--brass-light); margin: 8px 0; }
+    .stat-label { font-size: 0.7rem; color: var(--brass-mid); letter-spacing: 0.1em; }
+
+    .completion-bar {
+        width: 100%; height: 12px; background: rgba(0,0,0,0.5);
+        border: 1px solid var(--brass-dark); border-radius: 6px; overflow: hidden; margin: 10px 0;
+    }
+    .completion-fill {
+        height: 100%; background: linear-gradient(90deg, var(--brass-mid), var(--brass-light));
+        transition: width 0.5s ease-out;
+    }
+
+    .collection-grid {
+        display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 15px;
+    }
+    .collection-item {
+        background: linear-gradient(135deg, rgba(106,84,50,0.6), rgba(42,31,26,0.9));
+        border: 1px solid var(--brass-dark); border-radius: 6px; padding: 12px;
+        text-align: center; cursor: pointer; transition: all 0.2s;
+    }
+    .collection-item:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(212,180,131,0.2); }
+    .collection-item.ssr { border-color: #C0C0C0; }
+    .collection-item.sr { border-color: var(--brass-mid); }
+    .item-word { font-size: 1.2rem; font-weight: bold; color: var(--brass-light); margin: 8px 0; }
+    .item-count { font-size: 0.7rem; color: var(--brass-mid); }
+
+    /* --- 6. ENHANCED EFFECTS (Phase 1) --- */
+    .ssr-burst {
+        position: absolute; inset: 0; border-radius: 16px; pointer-events: none;
+        background: radial-gradient(circle, rgba(255,200,50,0.9) 0%, rgba(255,100,0,0.4) 40%, transparent 70%);
+        animation: burst-expand 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        z-index: 15;
+    }
+    @keyframes burst-expand {
+        0% { transform: scale(0.3); opacity: 1; }
+        100% { transform: scale(2.5); opacity: 0; filter: blur(20px); }
+    }
+
+    .motion-blur { filter: blur(4px); }
+
+    .steam-particle {
+        position: absolute; width: 20px; height: 20px; border-radius: 50%;
+        background: radial-gradient(circle, rgba(200,180,150,0.6), transparent);
+        pointer-events: none; z-index: 12;
+    }
+    @keyframes steam-rise {
+        0% { opacity: 0.8; transform: translateY(0) scale(1); }
+        100% { opacity: 0; transform: translateY(-60px) scale(2); }
+    }
 </style>
 </head>
 <body>
 
+<div class="tab-container">
+    <button class="tab-btn active" data-tab="game">ORACLE</button>
+    <button class="tab-btn" data-tab="stats">STATS</button>
+    <button class="tab-btn" data-tab="collection">COLLECTION</button>
+</div>
+
+<div id="game-view" class="view-container active">
 <div class="history-container">
     <div class="history-rack" id="history-rack"></div>
     <div class="header-info">
@@ -227,6 +317,61 @@
         </div>
     </div>
 </div>
+</div>
+
+<div id="stats-view" class="view-container">
+    <div style="padding-top: 20px;">
+        <h2 style="text-align: center; margin-bottom: 30px; letter-spacing: 0.3em; color: var(--brass-light);">STATISTICS</h2>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">TOTAL SPINS</div>
+                <div class="stat-value" id="stat-spins">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">TOTAL POINTS</div>
+                <div class="stat-value" id="stat-points">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">SSR OBTAINED</div>
+                <div class="stat-value" id="stat-divine">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">SR OBTAINED</div>
+                <div class="stat-value" id="stat-reality">0</div>
+            </div>
+        </div>
+        <div style="text-align: center; margin-top: 20px;">
+            <div style="font-size: 0.8rem; color: var(--brass-mid); margin-bottom: 10px;">HIGHEST PURITY</div>
+            <div style="font-size: 2rem; font-weight: bold; color: var(--brass-light);" id="stat-highest">0%</div>
+        </div>
+    </div>
+</div>
+
+<div id="collection-view" class="view-container">
+    <div style="padding-top: 20px;">
+        <h2 style="text-align: center; margin-bottom: 20px; letter-spacing: 0.3em; color: var(--brass-light);">COLLECTION CODEX</h2>
+        <div style="margin-bottom: 30px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span style="color: var(--brass-mid); font-size: 0.8rem;">COMPLETION</span>
+                <span style="color: var(--brass-light); font-weight: bold;" id="completion-text">0/0</span>
+            </div>
+            <div class="completion-bar">
+                <div class="completion-fill" id="completion-fill" style="width: 0%"></div>
+            </div>
+            <div style="text-align: center; margin-top: 8px;">
+                <span style="color: var(--brass-light); font-size: 1.2rem; font-weight: bold;" id="completion-percent">0%</span>
+            </div>
+        </div>
+        <div>
+            <div style="font-size: 0.7rem; color: var(--brass-mid); letter-spacing: 0.1em; margin-bottom: 10px;">SACRED WORDS (SSR)</div>
+            <div class="collection-grid" id="ssr-grid"></div>
+        </div>
+        <div style="margin-top: 30px;">
+            <div style="font-size: 0.7rem; color: var(--brass-mid); letter-spacing: 0.1em; margin-bottom: 10px;">REALITY WORDS (SR)</div>
+            <div class="collection-grid" id="sr-grid"></div>
+        </div>
+    </div>
+</div>
 
 <script>
 /**
@@ -257,11 +402,11 @@ const State = {
     getScore() { return this.spins===0 ? 100 : Math.min(100, Math.floor((this.points/(this.spins*20))*100)); }
 };
 
-/* --- AUDIO ENGINE --- */
+/* --- AUDIO ENGINE (Enhanced Phase 1) --- */
 const Audio = {
     ctx: null,
     init() { if(!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); },
-    
+
     tone(f, type, dur, vol) {
         if(!this.ctx) return;
         const o = this.ctx.createOscillator(); const g = this.ctx.createGain();
@@ -284,15 +429,52 @@ const Audio = {
 
     playGear() { this.noise(0.08, 0.3, true); this.tone(600, 'square', 0.06, 0.1); },
     playClank() { this.noise(0.15, 0.6, false); this.tone(150, 'sawtooth', 0.15, 0.3); },
-    playChime() { this.tone(880, 'sine', 0.8, 0.2); setTimeout(()=>this.tone(1318.51, 'sine', 1, 0.15), 150); },
-    playChoir() { this.tone(523.25, 'triangle', 2.5, 0.3); setTimeout(()=>this.tone(659.25, 'triangle', 2.3, 0.3), 150); setTimeout(()=>this.tone(783.99, 'triangle', 2, 0.3), 300); }
+
+    playChime() {
+        this.tone(880, 'sine', 0.8, 0.2);
+        setTimeout(()=>this.tone(1318.51, 'sine', 1, 0.15), 150);
+    },
+
+    playChoir() {
+        this.tone(523.25, 'triangle', 2.5, 0.3);
+        setTimeout(()=>this.tone(659.25, 'triangle', 2.3, 0.3), 150);
+        setTimeout(()=>this.tone(783.99, 'triangle', 2, 0.3), 300);
+    },
+
+    playDroneBuildup() {
+        this.tone(110, 'sine', 0.5, 0.15);
+        setTimeout(()=>this.tone(165, 'sine', 0.5, 0.12), 80);
+        setTimeout(()=>this.tone(220, 'sine', 0.6, 0.1), 160);
+    },
+
+    playMachineAmbience() {
+        this.noise(0.3, 0.25, true);
+        this.tone(120, 'sine', 0.4, 0.08);
+    },
+
+    playReachTension() {
+        const freqs = [200, 280, 380, 520];
+        freqs.forEach((f, i) => {
+            setTimeout(() => {
+                this.tone(f, 'sine', 0.15, 0.08);
+            }, i * 80);
+        });
+    },
+
+    playSSRExplosion() {
+        this.tone(330, 'sine', 0.4, 0.25);
+        setTimeout(()=>this.tone(550, 'sine', 0.5, 0.2), 100);
+        setTimeout(()=>this.tone(880, 'sine', 0.6, 0.15), 200);
+        this.noise(0.4, 0.4, true);
+    }
 };
 
-/* --- UI CONTROLLER --- */
+/* --- UI CONTROLLER (Enhanced Phase 1) --- */
 const UI = {
     cells: [], inners: [], ivs: [],
     btn: document.getElementById('main-btn'),
     rack: document.getElementById('history-rack'),
+    casing: document.querySelector('.machine-casing'),
 
     init() {
         const grid = document.getElementById('grid');
@@ -341,6 +523,31 @@ const UI = {
     setBtn(state) {
         if(state === 'STOP') { this.btn.innerText = 'HALT'; this.btn.classList.add('stop-mode'); }
         else { this.btn.innerText = 'RUN'; this.btn.classList.remove('stop-mode'); }
+    },
+
+    createSSRBurst() {
+        const burst = document.createElement('div'); burst.className = 'ssr-burst';
+        this.casing.appendChild(burst);
+        setTimeout(() => burst.remove(), 800);
+    },
+
+    createSteamParticles(count = 8) {
+        for(let i = 0; i < count; i++) {
+            const steam = document.createElement('div'); steam.className = 'steam-particle';
+            steam.style.left = (25 + Math.random() * 50) + '%';
+            steam.style.top = (40 + Math.random() * 20) + '%';
+            const dur = 0.8 + Math.random() * 0.4;
+            steam.style.animation = `steam-rise ${dur}s ease-out forwards`;
+            this.casing.appendChild(steam);
+            setTimeout(() => steam.remove(), dur * 1000);
+        }
+    },
+
+    createMotionBlur(duration = 100) {
+        this.cells.forEach(cell => cell.classList.add('motion-blur'));
+        setTimeout(() => {
+            this.cells.forEach(cell => cell.classList.remove('motion-blur'));
+        }, duration);
     }
 };
 
@@ -373,10 +580,13 @@ const Director = {
         State.phase = 'SPINNING'; State.spins++; State.save();
         UI.updateStats(); UI.setBtn('STOP');
         Audio.playClank(); if(navigator.vibrate) navigator.vibrate(30);
-        
+        UI.createMotionBlur(150);
+
         UI.cells.forEach(c => c.classList.remove('sugar-cube'));
         UI.inners.forEach(inn => { inn.classList.remove('crushed'); inn.style.color = 'var(--brass-light)'; });
         for(let i of [0,1,2,3,5,6,7,8]) UI.setThread(i, '');
+
+        Audio.playMachineAmbience();
 
         const isSSR = Math.random() < Cfg.ssrRate;
         State.targetGrid = Array(9).fill('').map(()=>Cfg.chars[Math.floor(Math.random()*Cfg.chars.length)]);
@@ -401,7 +611,7 @@ const Director = {
         State.phase = 'STOPPING'; UI.setBtn('START');
         Audio.playClank(); if(navigator.vibrate) navigator.vibrate(40);
         const tg = State.targetGrid;
-        
+
         let reach = false;
         for(let i of [5,7,8,6]) {
             clearInterval(UI.ivs[i]); UI.flipChar(i, tg[i]); Audio.playClank();
@@ -410,9 +620,10 @@ const Director = {
         }
 
         if(reach) {
-            Audio.tone(100, 'sawtooth', 1.2, 0.3);
-            if(navigator.vibrate) { const v=setInterval(()=>navigator.vibrate(15),100); setTimeout(()=>clearInterval(v),900); }
-            await new Promise(r => setTimeout(r, 900));
+            Audio.playReachTension();
+            if(navigator.vibrate) { const v=setInterval(()=>navigator.vibrate([20,10]),120); setTimeout(()=>clearInterval(v),1000); }
+            UI.createSteamParticles(6);
+            await new Promise(r => setTimeout(r, 1000));
         }
 
         for(let i of [3,1,0,2]) {
@@ -444,7 +655,7 @@ const Director = {
         lines.forEach(l => {
             const w = tg[l.idx[0]] + 'ん' + tg[l.idx[2]];
             UI.setThread(l.idx[2], '');
-            
+
             if(Cfg.divine.includes(w)) {
                 type = 'DIVINE'; State.points+=20; bestWord=w;
                 UI.setThread(l.idx[0], 'active'); UI.setThread(l.idx[2], 'active');
@@ -459,15 +670,19 @@ const Director = {
 
         if(type === 'DIVINE') {
             State.items.push({w: bestWord, t: 'SSR'}); State.lastWord = bestWord;
-            Audio.playChoir(); if(navigator.vibrate) navigator.vibrate([60,60,60,60,400]);
+            Audio.playSSRExplosion();
+            UI.createSSRBurst();
+            UI.createSteamParticles(12);
+            if(navigator.vibrate) navigator.vibrate([100,50,100,50,100,50,200]);
         } else if(type === 'REALITY') {
             State.items.push({w: bestWord, t: 'SR'});
             Audio.playChime();
+            if(navigator.vibrate) navigator.vibrate([50,30,50]);
         }
 
         State.save(); UI.renderHistory();
         State.phase = 'IDLE';
-        
+
         if(State.spins >= Cfg.max) setTimeout(() => this.showPlaque(), 2500);
     },
 
@@ -497,7 +712,88 @@ const Director = {
     }
 };
 
-window.onload = () => Director.init();
+/* --- TAB NAVIGATION & STATS SYSTEM (Phase 2) --- */
+const TabSystem = {
+    init() {
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => this.switchTab(btn.dataset.tab));
+        });
+    },
+
+    switchTab(tabName) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
+
+        document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+        document.getElementById(`${tabName}-view`).classList.add('active');
+
+        if(tabName === 'stats') this.updateStats();
+        if(tabName === 'collection') this.updateCollection();
+    },
+
+    async updateStats() {
+        const statsSpins = State.spins;
+        const statsPoints = State.points;
+        const statsHighest = State.getScore();
+
+        let divineCount = 0, realityCount = 0;
+        State.items.forEach(item => {
+            if(item.t === 'SSR') divineCount++;
+            else if(item.t === 'SR') realityCount++;
+        });
+
+        document.getElementById('stat-spins').innerText = statsSpins;
+        document.getElementById('stat-points').innerText = statsPoints;
+        document.getElementById('stat-divine').innerText = divineCount;
+        document.getElementById('stat-reality').innerText = realityCount;
+        document.getElementById('stat-highest').innerText = statsHighest + '%';
+    },
+
+    async updateCollection() {
+        const Cfg_divine = ["うんこ", "ちんこ", "まんこ", "ぱんこ", "あんこ", "さんこ", "きんこ", "わんこ", "げんこ"];
+        const Cfg_reality = ["てんき", "げんき", "りんご", "だんご", "きんご", "ぶんこ", "はんこ", "さんご"];
+
+        const collected = new Set(State.items.map(i => i.w));
+        const total = Cfg_divine.length + Cfg_reality.length;
+        const completionPercent = Math.floor((collected.size / total) * 100);
+
+        document.getElementById('completion-percent').innerText = completionPercent + '%';
+        document.getElementById('completion-text').innerText = `${collected.size}/${total}`;
+        document.getElementById('completion-fill').style.width = completionPercent + '%';
+
+        const ssrGrid = document.getElementById('ssr-grid');
+        const srGrid = document.getElementById('sr-grid');
+        ssrGrid.innerHTML = '';
+        srGrid.innerHTML = '';
+
+        Cfg_divine.forEach(word => {
+            const item = State.items.find(i => i.w === word);
+            const div = document.createElement('div');
+            div.className = `collection-item ssr ${item ? 'collected' : 'uncollected'}`;
+            div.innerHTML = `
+                <div class="item-word">${word}</div>
+                <div class="item-count">${item ? item.count + 'x' : '??'}</div>
+            `;
+            ssrGrid.appendChild(div);
+        });
+
+        Cfg_reality.forEach(word => {
+            const item = State.items.find(i => i.w === word);
+            const div = document.createElement('div');
+            div.className = `collection-item sr ${item ? 'collected' : 'uncollected'}`;
+            div.innerHTML = `
+                <div class="item-word">${word}</div>
+                <div class="item-count">${item ? item.count + 'x' : '??'}</div>
+            `;
+            srGrid.appendChild(div);
+        });
+    }
+};
+
+window.onload = () => {
+    Director.init();
+    TabSystem.init();
+};
 </script>
 </body>
 </html>
