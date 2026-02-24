@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0E0806">
+<title>The Brass Oracle: Masterpiece</title>
+<style>
+    /* --- 1. THEME: PRECISION MECHANISM --- */
+    :root {
+        --bg-dark: #0E0806;         /* 漆黒に近いチャコール */
+        --metal-base: #2A1F1A;      /* 鋳鉄のベース */
+        --brass-light: #D4B483;     /* シャンパンゴールドの光 */
+        --brass-mid: #A68A5C;       /* 真鍮の中間色 */
+        --brass-dark: #6E5432;      /* ブロンズの影 */
+        --glass-reflection: rgba(255, 255, 255, 0.1);
+        --font: "Hiragino Mincho ProN", "Yu Mincho", serif;
+        --shadow-depth: 0 10px 20px rgba(0,0,0,0.5), inset 0 2px 3px rgba(255,255,255,0.15);
+    }
+
+    body, html {
+        margin: 0; padding: 0; height: 100%;
+        background-color: var(--bg-dark);
+        /* 微細なノイズテクスチャで金属感を出す */
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E"), radial-gradient(circle at center, #1A120E 0%, #050302 100%);
+        color: var(--brass-light); font-family: var(--font);
+        overflow: hidden; display: flex; flex-direction: column; align-items: center;
+        -webkit-user-select: none; user-select: none; touch-action: none;
+    }
+
+    /* --- 2. LIVE HISTORY (The Brass Slots) --- */
+    .history-container {
+        margin-top: 6vh; width: 90vw; max-width: 400px; position: relative;
+    }
+    .history-rack {
+        height: 55px; background: var(--metal-base);
+        border-radius: 6px; /* 凹んだレール */
+        box-shadow: inset 0 5px 15px rgba(0,0,0,0.9), 0 1px 1px rgba(255,255,255,0.1);
+        border-bottom: 2px solid var(--brass-dark);
+        display: flex; align-items: center; padding: 0 8px; gap: 6px;
+        overflow-x: auto; overflow-y: hidden; white-space: nowrap;
+        mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+    }
+    .history-rack::-webkit-scrollbar { display: none; }
+    
+    /* 重厚な真鍮プレート */
+    .brass-plate {
+        min-width: 48px; height: 38px; border-radius: 3px;
+        background: linear-gradient(135deg, var(--brass-light) 0%, var(--brass-mid) 50%, var(--brass-dark) 100%);
+        /* 鋭いエッジライトと深い影 */
+        box-shadow: inset 1px 1px 1px rgba(255,255,255,0.6), inset -1px -1px 2px rgba(0,0,0,0.5), 0 4px 8px rgba(0,0,0,0.6);
+        display: flex; justify-content: center; align-items: center;
+        color: #221; font-size: 0.65rem; font-weight: bold; font-family: "Courier New", monospace; letter-spacing: 0.1em;
+        text-shadow: 0 1px 0 rgba(255,255,255,0.4);
+        position: relative; overflow: hidden;
+        animation: plate-snap 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .brass-plate::after { content:''; position:absolute; top:0; left:0; right:0; height:50%; background: linear-gradient(to bottom, rgba(255,255,255,0.3), transparent); pointer-events: none; }
+    .brass-plate.SR { background: linear-gradient(135deg, #C0C0C0, #888, #555); }
+    @keyframes plate-snap { 0% { transform: translateY(-40px) scale(0.9); opacity: 0; } 100% { transform: translateY(0) scale(1); opacity: 1; } }
+
+    .header-info { width: 100%; display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.65rem; letter-spacing: 0.3em; color: var(--brass-mid); text-transform: uppercase; }
+
+    /* --- 3. THE MACHINE (Crystal & Brass) --- */
+    .machine-casing {
+        position: relative; margin-top: 3vh; width: 88vw; max-width: 360px; aspect-ratio: 1/1;
+        background: #120B09; border-radius: 16px;
+        /* 複雑な金属フレームの表現 */
+        border: 1px solid var(--brass-dark);
+        box-shadow: 
+            0 0 0 2px var(--metal-base), 0 0 0 4px var(--brass-dark), /* 外枠 */
+            inset 0 0 40px rgba(0,0,0,1), /* 内部の闇 */
+            0 25px 50px rgba(0,0,0,0.8); /* 全体の影 */
+        display: flex; justify-content: center; align-items: center;
+        overflow: hidden;
+    }
+    /* 厚みのあるクリスタルガラスの反射 */
+    .machine-casing::before {
+        content: ''; position: absolute; inset: 0; border-radius: 16px; pointer-events: none; z-index: 20;
+        background: linear-gradient(120deg, rgba(255,255,255,0.1) 0%, transparent 30%, rgba(255,255,255,0.05) 45%, transparent 60%);
+        box-shadow: inset 0 1px 1px rgba(255,255,255,0.2);
+    }
+
+    #threads { position: absolute; inset: 5%; width: 90%; height: 90%; pointer-events: none; z-index: 5; opacity: 0.6; }
+    .thread { stroke: var(--brass-dark); stroke-width: 1; opacity: 0.2; transition: 0.3s; }
+    .thread.active { stroke: var(--brass-light); stroke-width: 2; opacity: 0.8; filter: drop-shadow(0 0 8px var(--brass-light)); }
+    .thread.reach { stroke: #FF4500; stroke-width: 3; opacity: 1; animation: filament-pulse 0.1s infinite alternate; }
+    @keyframes filament-pulse { from { filter: drop-shadow(0 0 2px #FF4500); opacity: 0.7; } to { filter: drop-shadow(0 0 10px #FF4500); opacity: 1; } }
+
+    .matrix { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 86%; height: 86%; z-index: 10; }
+
+    .cell {
+        position: relative;
+        /* ガラスレンズの奥にある表現 */
+        background: radial-gradient(circle, rgba(10,5,3,0.9), #000);
+        border: 1px solid var(--brass-dark); border-radius: 6px;
+        box-shadow: inset 0 0 15px rgba(0,0,0,1), 0 2px 5px rgba(0,0,0,0.5);
+        display: flex; justify-content: center; align-items: center;
+        font-size: 2.4rem; perspective: 600px;
+    }
+    /* ビス留めの意匠 */
+    .cell::after { content:''; position:absolute; top:4px; left:4px; width:3px; height:3px; background:#111; border-radius:50%; box-shadow: inset 0.5px 0.5px 0 rgba(255,255,255,0.3), 0 0 1px rgba(0,0,0,0.5); }
+    .cell::before { content:''; position:absolute; bottom:4px; right:4px; width:3px; height:3px; background:#111; border-radius:50%; box-shadow: inset 0.5px 0.5px 0 rgba(255,255,255,0.3), 0 0 1px rgba(0,0,0,0.5); }
+
+    .cell.center {
+        /* 特等席：歯車の意匠とアンビエントライト */
+        background: radial-gradient(circle, rgba(166, 138, 92, 0.15), #000);
+        border-color: var(--brass-mid);
+        box-shadow: inset 0 0 25px rgba(166, 138, 92, 0.2), 0 0 15px rgba(166, 138, 92, 0.1);
+        font-weight: bold;
+    }
+    
+    .char-inner {
+        color: var(--brass-light);
+        /* 文字自体は発光せず、後ろからの光で浮かび上がる */
+        text-shadow: 0 2px 5px rgba(0,0,0,0.8);
+        transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.15s;
+        transform-style: preserve-3d;
+    }
+    .flip-out { transform: rotateX(-100deg) translateZ(-20px); opacity: 0.2; filter: blur(2px); }
+    .flip-in { transform: rotateX(90deg) translateZ(20px); opacity: 0.2; filter: blur(2px); }
+    .slip { transition: transform 0.2s cubic-bezier(0.1, 1.2, 0.5, 1); transform: translateY(25px); opacity: 0; }
+
+    .sugar-cube { cursor: pointer; color: var(--brass-dark) !important; opacity: 0.6; }
+    .crushed { animation: glass-crush 0.4s forwards; pointer-events: none; }
+    @keyframes glass-crush { 100% { transform: scale(1.8) rotate(20deg) translateZ(100px); opacity: 0; filter: blur(8px); } }
+
+    /* --- 4. CONTROLS (The Master Key) --- */
+    .control-deck {
+        position: absolute; bottom: 6vh; width: 100%; display: flex; justify-content: center; z-index: 20;
+        filter: drop-shadow(0 15px 30px rgba(0,0,0,0.7));
+    }
+    
+    /* 重厚な機械式プッシュキー */
+    .brass-key {
+        width: 100px; height: 100px; border-radius: 50%;
+        /* 金属の削り出し表現 */
+        background: conic-gradient(from 135deg, var(--brass-light), var(--brass-mid), var(--brass-dark), var(--brass-mid), var(--brass-light));
+        border: 3px solid #1A120E;
+        /* 立体的な影とハイライト */
+        box-shadow: 
+            0 15px 35px rgba(0,0,0,0.8), /* 全体の影 */
+            inset 0 2px 3px rgba(255,255,255,0.5), /* 上部の鋭い光 */
+            inset 0 -8px 15px rgba(0,0,0,0.6); /* 下部の深い影（押し込み感） */
+        display: flex; justify-content: center; align-items: center;
+        color: #2A1F1A; font-family: "Courier New", monospace; font-size: 1.1rem; font-weight: 900; letter-spacing: 0.1em;
+        cursor: pointer; transition: all 0.08s ease-out; -webkit-tap-highlight-color: transparent;
+        text-shadow: 0 1px 0 rgba(255,255,255,0.4);
+    }
+    .brass-key::before {
+        content: ''; position: absolute; inset: 8px; border-radius: 50%;
+        background: radial-gradient(circle at 50% 40%, rgba(255,255,255,0.2), transparent 60%);
+        border: 1px solid rgba(166, 138, 92, 0.4); box-shadow: inset 0 2px 5px rgba(0,0,0,0.3);
+    }
+
+    .brass-key:active {
+        transform: translateY(8px) scale(0.98);
+        box-shadow: 
+            0 5px 15px rgba(0,0,0,0.9),
+            inset 0 1px 2px rgba(255,255,255,0.3),
+            inset 0 -2px 5px rgba(0,0,0,0.7);
+        background: conic-gradient(from 135deg, var(--brass-mid), var(--brass-dark), var(--brass-mid));
+    }
+    .brass-key.stop-mode { color: #700; text-shadow: 0 1px 0 rgba(255,100,100,0.3); }
+    .brass-key.stop-mode:active { color: #500; }
+
+    /* --- 5. THE END PLAQUE --- */
+    #night-overlay { position: fixed; inset: 0; background: rgba(10,5,3,0.9); z-index: 100; display: none; justify-content: center; align-items: center; opacity: 0; transition: opacity 1.5s; backdrop-filter: blur(8px); }
+    .plaque {
+        width: 85%; max-width: 340px;
+        background: linear-gradient(135deg, #2A1F1A, #1A120E);
+        border: 3px solid var(--brass-mid); border-radius: 8px; padding: 40px 30px;
+        box-shadow: 0 30px 80px rgba(0,0,0,1), inset 0 0 30px rgba(0,0,0,0.8);
+        text-align: center; position: relative; color: var(--brass-mid);
+    }
+    /* 四隅のビス */
+    .plaque::before, .plaque::after { content: ''; position: absolute; width: 8px; height: 8px; border-radius: 50%; background: #111; border: 1px solid var(--brass-dark); box-shadow: inset 1px 1px 1px rgba(255,255,255,0.2); }
+    .plaque::before { top: 12px; left: 12px; } .plaque::after { top: 12px; right: 12px; }
+    
+    .plaque-title { font-size: 1.3rem; letter-spacing: 0.4em; border-bottom: 1px solid var(--brass-dark); padding-bottom: 15px; margin-bottom: 25px; color: var(--brass-light); }
+    .plaque-body { font-size: 0.85rem; line-height: 2.4; }
+    .sacred-word { font-size: 1.8rem; font-weight: bold; color: var(--brass-light); text-shadow: 0 0 20px rgba(197, 160, 89, 0.4); display: block; margin: 10px 0; }
+    .plaque-score { margin-top: 30px; font-size: 1.2rem; font-family: "Courier New", monospace; color: var(--brass-light); cursor: pointer; padding: 12px 20px; border: 2px dashed var(--brass-dark); border-radius: 4px; transition: 0.2s; }
+    .plaque-score:active { background: rgba(197, 160, 89, 0.1); transform: scale(0.98); }
+    
+    .crack { position: absolute; background: #fff; height: 1px; width: 120px; opacity: 0.6; pointer-events: none; box-shadow: 0 0 5px #fff; }
+
+    /* --- 6. PHASE 2: COLLECTION UI --- */
+    .tab-container {
+        position: fixed; top: 0; left: 0; right: 0; height: 50px;
+        background: linear-gradient(180deg, rgba(42,31,26,0.95), rgba(42,31,26,0.7));
+        display: flex; gap: 0; z-index: 50; border-bottom: 1px solid var(--brass-dark);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    }
+    .tab-btn {
+        flex: 1; background: none; border: none; color: var(--brass-mid);
+        font-family: var(--font); font-size: 0.8rem; letter-spacing: 0.2em;
+        cursor: pointer; transition: all 0.3s;
+        border-bottom: 2px solid transparent;
+    }
+    .tab-btn.active { color: var(--brass-light); border-bottom-color: var(--brass-light); }
+    .tab-btn:hover { color: var(--brass-light); }
+
+    .view-container {
+        position: fixed; inset: 50px 0 0 0; overflow-y: auto; display: none;
+        padding: 20px; background: var(--bg-dark);
+    }
+    .view-container.active { display: block; animation: fadeIn 0.3s; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    #game-view { display: block; } /* Game view is always visible initially */
+
+    .stats-grid {
+        display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px;
+    }
+    .stat-card {
+        background: linear-gradient(135deg, rgba(166,138,92,0.1), rgba(42,31,26,0.8));
+        border: 1px solid var(--brass-dark); border-radius: 8px;
+        padding: 15px; text-align: center;
+    }
+    .stat-value { font-size: 1.8rem; font-weight: bold; color: var(--brass-light); margin: 8px 0; }
+    .stat-label { font-size: 0.7rem; color: var(--brass-mid); letter-spacing: 0.1em; }
+
+    .completion-bar {
+        width: 100%; height: 12px; background: rgba(0,0,0,0.5);
+        border: 1px solid var(--brass-dark); border-radius: 6px; overflow: hidden; margin: 10px 0;
+    }
+    .completion-fill {
+        height: 100%; background: linear-gradient(90deg, var(--brass-mid), var(--brass-light));
+        transition: width 0.5s ease-out;
+    }
+
+    .collection-grid {
+        display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 15px;
+    }
+    .collection-item {
+        background: linear-gradient(135deg, rgba(106,84,50,0.6), rgba(42,31,26,0.9));
+        border: 1px solid var(--brass-dark); border-radius: 6px; padding: 12px;
+        text-align: center; cursor: pointer; transition: all 0.2s;
+    }
+    .collection-item:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(212,180,131,0.2); }
+    .collection-item.ssr { border-color: #C0C0C0; }
+    .collection-item.sr { border-color: var(--brass-mid); }
+    .item-word { font-size: 1.2rem; font-weight: bold; color: var(--brass-light); margin: 8px 0; }
+    .item-count { font-size: 0.7rem; color: var(--brass-mid); }
+
+    /* --- 6. ENHANCED EFFECTS (Phase 1) --- */
+    .ssr-burst {
+        position: absolute; inset: 0; border-radius: 16px; pointer-events: none;
+        background: radial-gradient(circle, rgba(255,200,50,0.9) 0%, rgba(255,100,0,0.4) 40%, transparent 70%);
+        animation: burst-expand 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        z-index: 15;
+    }
+    @keyframes burst-expand {
+        0% { transform: scale(0.3); opacity: 1; }
+        100% { transform: scale(2.5); opacity: 0; filter: blur(20px); }
+    }
+
+    .motion-blur { filter: blur(4px); }
+
+    .steam-particle {
+        position: absolute; width: 20px; height: 20px; border-radius: 50%;
+        background: radial-gradient(circle, rgba(200,180,150,0.6), transparent);
+        pointer-events: none; z-index: 12;
+    }
+    @keyframes steam-rise {
+        0% { opacity: 0.8; transform: translateY(0) scale(1); }
+        100% { opacity: 0; transform: translateY(-60px) scale(2); }
+    }
+</style>
+</head>
+<body>
+
+<div class="tab-container">
+    <button class="tab-btn active" data-tab="game">ORACLE</button>
+    <button class="tab-btn" data-tab="stats">STATS</button>
+    <button class="tab-btn" data-tab="collection">COLLECTION</button>
+</div>
+
+<div id="game-view" class="view-container active">
+<div class="history-container">
+    <div class="history-rack" id="history-rack"></div>
+    <div class="header-info">
+        <span>Brass Oracle Mk.IV</span>
+        <span><span id="spin-count">0</span> / 15 CYCLES</span>
+    </div>
+</div>
+
+<div class="machine-casing">
+    <svg id="threads" viewBox="0 0 100 100">
+        <line id="t-0" x1="16" y1="16" x2="50" y2="50" class="thread"/>
+        <line id="t-1" x1="50" y1="16" x2="50" y2="50" class="thread"/>
+        <line id="t-2" x1="84" y1="16" x2="50" y2="50" class="thread"/>
+        <line id="t-3" x1="16" y1="50" x2="50" y2="50" class="thread"/>
+        <line id="t-5" x1="84" y1="50" x2="50" y2="50" class="thread"/>
+        <line id="t-6" x1="16" y1="84" x2="50" y2="50" class="thread"/>
+        <line id="t-7" x1="50" y1="84" x2="50" y2="50" class="thread"/>
+        <line id="t-8" x1="84" y1="84" x2="50" y2="50" class="thread"/>
+    </svg>
+    <div class="matrix" id="grid"></div>
+</div>
+
+<div class="control-deck">
+    <div class="brass-key" id="main-btn">RUN</div>
+</div>
+
+<div id="night-overlay">
+    <div class="plaque" id="plaque">
+        <div class="plaque-title">神託記録板</div>
+        <div class="plaque-body">
+            十五の周期を終え<br>機械は停止した。<br><br>
+            最終出力神託:
+            <span class="sacred-word" id="last-word">無</span>
+            <div class="plaque-score" id="reset-btn">純度: --%</div>
+            <div style="font-size:0.55rem; opacity:0.4; margin-top:15px; letter-spacing: 0.1em;">記録板を10回打撃し、初期化せよ</div>
+        </div>
+    </div>
+</div>
+</div>
+
+<div id="stats-view" class="view-container">
+    <div style="padding-top: 20px;">
+        <h2 style="text-align: center; margin-bottom: 30px; letter-spacing: 0.3em; color: var(--brass-light);">STATISTICS</h2>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">TOTAL SPINS</div>
+                <div class="stat-value" id="stat-spins">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">TOTAL POINTS</div>
+                <div class="stat-value" id="stat-points">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">SSR OBTAINED</div>
+                <div class="stat-value" id="stat-divine">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">SR OBTAINED</div>
+                <div class="stat-value" id="stat-reality">0</div>
+            </div>
+        </div>
+        <div style="text-align: center; margin-top: 20px;">
+            <div style="font-size: 0.8rem; color: var(--brass-mid); margin-bottom: 10px;">HIGHEST PURITY</div>
+            <div style="font-size: 2rem; font-weight: bold; color: var(--brass-light);" id="stat-highest">0%</div>
+        </div>
+    </div>
+</div>
+
+<div id="collection-view" class="view-container">
+    <div style="padding-top: 20px;">
+        <h2 style="text-align: center; margin-bottom: 20px; letter-spacing: 0.3em; color: var(--brass-light);">COLLECTION CODEX</h2>
+        <div style="margin-bottom: 30px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span style="color: var(--brass-mid); font-size: 0.8rem;">COMPLETION</span>
+                <span style="color: var(--brass-light); font-weight: bold;" id="completion-text">0/0</span>
+            </div>
+            <div class="completion-bar">
+                <div class="completion-fill" id="completion-fill" style="width: 0%"></div>
+            </div>
+            <div style="text-align: center; margin-top: 8px;">
+                <span style="color: var(--brass-light); font-size: 1.2rem; font-weight: bold;" id="completion-percent">0%</span>
+            </div>
+        </div>
+        <div>
+            <div style="font-size: 0.7rem; color: var(--brass-mid); letter-spacing: 0.1em; margin-bottom: 10px;">SACRED WORDS (SSR)</div>
+            <div class="collection-grid" id="ssr-grid"></div>
+        </div>
+        <div style="margin-top: 30px;">
+            <div style="font-size: 0.7rem; color: var(--brass-mid); letter-spacing: 0.1em; margin-bottom: 10px;">REALITY WORDS (SR)</div>
+            <div class="collection-grid" id="sr-grid"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+/**
+ * The Brass Oracle: Masterpiece Edition
+ * Final refined aesthetics & robust logic.
+ */
+
+/* --- CONFIG & STATE --- */
+const Cfg = {
+    max: 15,
+    divine: ["うんこ", "ちんこ", "まんこ", "ぱんこ", "あんこ", "さんこ", "きんこ", "わんこ", "げんこ"],
+    reality: ["てんき", "げんき", "りんご", "だんご", "きんご", "ぶんこ", "はんこ", "さんご"],
+    chars: "あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわを",
+    ssrRate: 0.18, slipRate: 0.25
+};
+
+const State = {
+    spins: parseInt(localStorage.getItem('bom_spins') || 0),
+    points: parseInt(localStorage.getItem('bom_points') || 0),
+    items: JSON.parse(localStorage.getItem('bom_items') || '[]'),
+    phase: 'IDLE', targetGrid: [], scenario: 'NORMAL', lastWord: "無",
+
+    save() {
+        localStorage.setItem('bom_spins', this.spins);
+        localStorage.setItem('bom_points', this.points);
+        localStorage.setItem('bom_items', JSON.stringify(this.items));
+    },
+    getScore() { return this.spins===0 ? 100 : Math.min(100, Math.floor((this.points/(this.spins*20))*100)); }
+};
+
+/* --- AUDIO ENGINE (Enhanced Phase 1) --- */
+const Audio = {
+    ctx: null,
+    init() { if(!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); },
+
+    tone(f, type, dur, vol) {
+        if(!this.ctx) return;
+        const o = this.ctx.createOscillator(); const g = this.ctx.createGain();
+        o.type = type; o.frequency.setValueAtTime(f, this.ctx.currentTime);
+        g.gain.setValueAtTime(vol, this.ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + dur);
+        o.connect(g); g.connect(this.ctx.destination);
+        o.start(); o.stop(this.ctx.currentTime + dur);
+    },
+
+    noise(dur, vol, isHigh=false) {
+        if(!this.ctx) return;
+        const bs = this.ctx.createBufferSource(); const b = this.ctx.createBuffer(1, this.ctx.sampleRate*dur, this.ctx.sampleRate);
+        const d = b.getChannelData(0); for(let i=0; i<b.length; i++) d[i] = Math.random()*2-1;
+        bs.buffer = b;
+        const f = this.ctx.createBiquadFilter(); f.type = isHigh ? 'highpass' : 'lowpass'; f.frequency.value = isHigh ? 2000 : 600;
+        const g = this.ctx.createGain(); g.gain.setValueAtTime(vol, this.ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + dur);
+        bs.connect(f); f.connect(g); g.connect(this.ctx.destination); bs.start();
+    },
+
+    playGear() { this.noise(0.08, 0.3, true); this.tone(600, 'square', 0.06, 0.1); },
+    playClank() { this.noise(0.15, 0.6, false); this.tone(150, 'sawtooth', 0.15, 0.3); },
+
+    playChime() {
+        this.tone(880, 'sine', 0.8, 0.2);
+        setTimeout(()=>this.tone(1318.51, 'sine', 1, 0.15), 150);
+    },
+
+    playChoir() {
+        this.tone(523.25, 'triangle', 2.5, 0.3);
+        setTimeout(()=>this.tone(659.25, 'triangle', 2.3, 0.3), 150);
+        setTimeout(()=>this.tone(783.99, 'triangle', 2, 0.3), 300);
+    },
+
+    playDroneBuildup() {
+        this.tone(110, 'sine', 0.5, 0.15);
+        setTimeout(()=>this.tone(165, 'sine', 0.5, 0.12), 80);
+        setTimeout(()=>this.tone(220, 'sine', 0.6, 0.1), 160);
+    },
+
+    playMachineAmbience() {
+        this.noise(0.3, 0.25, true);
+        this.tone(120, 'sine', 0.4, 0.08);
+    },
+
+    playReachTension() {
+        const freqs = [200, 280, 380, 520];
+        freqs.forEach((f, i) => {
+            setTimeout(() => {
+                this.tone(f, 'sine', 0.15, 0.08);
+            }, i * 80);
+        });
+    },
+
+    playSSRExplosion() {
+        this.tone(330, 'sine', 0.4, 0.25);
+        setTimeout(()=>this.tone(550, 'sine', 0.5, 0.2), 100);
+        setTimeout(()=>this.tone(880, 'sine', 0.6, 0.15), 200);
+        this.noise(0.4, 0.4, true);
+    }
+};
+
+/* --- UI CONTROLLER (Enhanced Phase 1) --- */
+const UI = {
+    cells: [], inners: [], ivs: [],
+    btn: document.getElementById('main-btn'),
+    rack: document.getElementById('history-rack'),
+    casing: document.querySelector('.machine-casing'),
+
+    init() {
+        const grid = document.getElementById('grid');
+        for(let i=0; i<9; i++) {
+            const cell = document.createElement('div'); cell.className = 'cell';
+            const inn = document.createElement('div'); inn.className = 'char-inner';
+            if(i===4) { cell.classList.add('center'); inn.innerText = 'ん'; }
+            else { inn.innerText = ''; cell.onclick = () => Director.crush(i); }
+            cell.appendChild(inn); grid.appendChild(cell);
+            this.cells[i] = cell; this.inners[i] = inn;
+        }
+        this.updateStats();
+        this.renderHistory();
+    },
+
+    updateStats() { document.getElementById('spin-count').innerText = State.spins; },
+
+    renderHistory() {
+        this.rack.innerHTML = '';
+        State.items.forEach(it => {
+            const p = document.createElement('div'); p.className = `brass-plate ${it.t}`; p.innerText = it.w;
+            this.rack.appendChild(p);
+        });
+        this.rack.scrollLeft = this.rack.scrollWidth;
+    },
+
+    flipChar(i, char) {
+        const inn = this.inners[i];
+        inn.classList.add('flip-out');
+        setTimeout(() => {
+            inn.innerText = char;
+            inn.classList.remove('flip-out');
+            inn.classList.add('flip-in');
+            setTimeout(() => { inn.classList.remove('flip-in'); }, 30);
+        }, 150);
+    },
+
+    slipChar(i, char) {
+        const inn = this.inners[i];
+        inn.classList.add('slip');
+        setTimeout(() => { inn.innerText = char; inn.classList.remove('slip'); }, 200);
+    },
+
+    setThread(i, state) { const t = document.getElementById(`t-${i}`); if(t) t.className = `thread ${state}`; },
+
+    setBtn(state) {
+        if(state === 'STOP') { this.btn.innerText = 'HALT'; this.btn.classList.add('stop-mode'); }
+        else { this.btn.innerText = 'RUN'; this.btn.classList.remove('stop-mode'); }
+    },
+
+    createSSRBurst() {
+        const burst = document.createElement('div'); burst.className = 'ssr-burst';
+        this.casing.appendChild(burst);
+        setTimeout(() => burst.remove(), 800);
+    },
+
+    createSteamParticles(count = 8) {
+        for(let i = 0; i < count; i++) {
+            const steam = document.createElement('div'); steam.className = 'steam-particle';
+            steam.style.left = (25 + Math.random() * 50) + '%';
+            steam.style.top = (40 + Math.random() * 20) + '%';
+            const dur = 0.8 + Math.random() * 0.4;
+            steam.style.animation = `steam-rise ${dur}s ease-out forwards`;
+            this.casing.appendChild(steam);
+            setTimeout(() => steam.remove(), dur * 1000);
+        }
+    },
+
+    createMotionBlur(duration = 100) {
+        this.cells.forEach(cell => cell.classList.add('motion-blur'));
+        setTimeout(() => {
+            this.cells.forEach(cell => cell.classList.remove('motion-blur'));
+        }, duration);
+    }
+};
+
+/* --- DIRECTOR (CORE LOGIC) --- */
+const Director = {
+    init() {
+        UI.init();
+        UI.btn.onclick = () => this.handleBtn();
+        if(State.spins >= Cfg.max) this.showPlaque();
+    },
+
+    handleBtn() {
+        Audio.init();
+        if(State.phase === 'IDLE') {
+            if(State.spins >= Cfg.max) return;
+            this.startSpin();
+        } else if(State.phase === 'SPINNING') {
+            this.stopSpin();
+        }
+    },
+
+    crush(i) {
+        if(State.phase !== 'IDLE' || i===4) return;
+        if(!UI.cells[i].classList.contains('sugar-cube')) return;
+        UI.inners[i].classList.add('crushed'); UI.cells[i].classList.remove('sugar-cube');
+        Audio.noise(0.15, 0.6, true); if(navigator.vibrate) navigator.vibrate(20);
+    },
+
+    startSpin() {
+        State.phase = 'SPINNING'; State.spins++; State.save();
+        UI.updateStats(); UI.setBtn('STOP');
+        Audio.playClank(); if(navigator.vibrate) navigator.vibrate(30);
+        UI.createMotionBlur(150);
+
+        UI.cells.forEach(c => c.classList.remove('sugar-cube'));
+        UI.inners.forEach(inn => { inn.classList.remove('crushed'); inn.style.color = 'var(--brass-light)'; });
+        for(let i of [0,1,2,3,5,6,7,8]) UI.setThread(i, '');
+
+        Audio.playMachineAmbience();
+
+        const isSSR = Math.random() < Cfg.ssrRate;
+        State.targetGrid = Array(9).fill('').map(()=>Cfg.chars[Math.floor(Math.random()*Cfg.chars.length)]);
+        State.targetGrid[4] = 'ん'; State.scenario = 'NORMAL';
+
+        if(isSSR) {
+            const word = Cfg.divine[Math.floor(Math.random()*Cfg.divine.length)];
+            const line = [[3,4,5],[1,4,7],[0,4,8],[2,4,6]][Math.floor(Math.random()*4)];
+            State.targetGrid[line[0]] = word[0]; State.targetGrid[line[2]] = word[2];
+            if(Math.random() < Cfg.slipRate) State.scenario = 'SLIP';
+        }
+
+        [0,1,2,3,5,6,7,8].forEach(i => {
+            UI.ivs[i] = setInterval(() => {
+                UI.flipChar(i, Cfg.chars[Math.floor(Math.random()*Cfg.chars.length)]);
+                Audio.playGear();
+            }, 280);
+        });
+    },
+
+    async stopSpin() {
+        State.phase = 'STOPPING'; UI.setBtn('START');
+        Audio.playClank(); if(navigator.vibrate) navigator.vibrate(40);
+        const tg = State.targetGrid;
+
+        let reach = false;
+        for(let i of [5,7,8,6]) {
+            clearInterval(UI.ivs[i]); UI.flipChar(i, tg[i]); Audio.playClank();
+            if(tg[i] === 'こ') { reach = true; UI.setThread(i, 'reach'); }
+            await new Promise(r => setTimeout(r, 180));
+        }
+
+        if(reach) {
+            Audio.playReachTension();
+            if(navigator.vibrate) { const v=setInterval(()=>navigator.vibrate([20,10]),120); setTimeout(()=>clearInterval(v),1000); }
+            UI.createSteamParticles(6);
+            await new Promise(r => setTimeout(r, 1000));
+        }
+
+        for(let i of [3,1,0,2]) {
+            clearInterval(UI.ivs[i]);
+            if(State.scenario === 'SLIP' && tg[i] !== Cfg.chars[0]) UI.flipChar(i, 'る');
+            else UI.flipChar(i, tg[i]);
+            Audio.playClank();
+        }
+
+        if(State.scenario === 'SLIP') {
+            await new Promise(r => setTimeout(r, 800));
+            for(let i of [3,1,0,2]) {
+                if(UI.inners[i].innerText !== tg[i]) {
+                    UI.slipChar(i, tg[i]); Audio.playClank();
+                    if(navigator.vibrate) navigator.vibrate([50,50]);
+                }
+            }
+        }
+
+        await new Promise(r => setTimeout(r, 500));
+        this.judge();
+    },
+
+    judge() {
+        const tg = State.targetGrid;
+        const lines = [{idx:[3,4,5]}, {idx:[1,4,7]}, {idx:[0,4,8]}, {idx:[2,4,6]}];
+        let type = 'VOID'; let bestWord = '';
+
+        lines.forEach(l => {
+            const w = tg[l.idx[0]] + 'ん' + tg[l.idx[2]];
+            UI.setThread(l.idx[2], '');
+
+            if(Cfg.divine.includes(w)) {
+                type = 'DIVINE'; State.points+=20; bestWord=w;
+                UI.setThread(l.idx[0], 'active'); UI.setThread(l.idx[2], 'active');
+                UI.inners[l.idx[0]].style.color = '#FFF'; UI.inners[l.idx[2]].style.color = '#FFF';
+            } else if(Cfg.reality.includes(w)) {
+                if(type!=='DIVINE') { type = 'REALITY'; bestWord=w; }
+                State.points+=5;
+                UI.setThread(l.idx[0], 'active'); UI.setThread(l.idx[2], 'active');
+                UI.cells[l.idx[0]].classList.add('sugar-cube'); UI.cells[l.idx[2]].classList.add('sugar-cube');
+            } else { State.points+=1; }
+        });
+
+        if(type === 'DIVINE') {
+            State.items.push({w: bestWord, t: 'SSR'}); State.lastWord = bestWord;
+            Audio.playSSRExplosion();
+            UI.createSSRBurst();
+            UI.createSteamParticles(12);
+            if(navigator.vibrate) navigator.vibrate([100,50,100,50,100,50,200]);
+        } else if(type === 'REALITY') {
+            State.items.push({w: bestWord, t: 'SR'});
+            Audio.playChime();
+            if(navigator.vibrate) navigator.vibrate([50,30,50]);
+        }
+
+        State.save(); UI.renderHistory();
+        State.phase = 'IDLE';
+
+        if(State.spins >= Cfg.max) setTimeout(() => this.showPlaque(), 2500);
+    },
+
+    showPlaque() {
+        const ov = document.getElementById('night-overlay');
+        ov.style.display = 'flex'; setTimeout(()=> ov.style.opacity = 1, 50);
+        document.getElementById('last-word').innerText = State.lastWord;
+        
+        const btn = document.getElementById('reset-btn');
+        btn.innerText = `純度: ${State.getScore()}%`;
+        
+        let taps = 0;
+        btn.onclick = (e) => {
+            taps++; Audio.playClank(); if(navigator.vibrate) navigator.vibrate(30);
+            if(taps <= 8) {
+                const c = document.createElement('div'); c.className = 'crack';
+                c.style.top = Math.random()*90+'%'; c.style.left = Math.random()*90+'%';
+                c.style.transform = `rotate(${Math.random()*360}deg)`;
+                document.getElementById('plaque').appendChild(c);
+            }
+            if(taps === 10) {
+                Audio.noise(0.6, 0.8, false); if(navigator.vibrate) navigator.vibrate([100,50,600]);
+                document.body.style.filter = 'invert(1) brightness(1.5)';
+                setTimeout(() => { localStorage.clear(); location.reload(); }, 1200);
+            }
+        };
+    }
+};
+
+/* --- TAB NAVIGATION & STATS SYSTEM (Phase 2) --- */
+const TabSystem = {
+    init() {
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => this.switchTab(btn.dataset.tab));
+        });
+    },
+
+    switchTab(tabName) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
+
+        document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+        document.getElementById(`${tabName}-view`).classList.add('active');
+
+        if(tabName === 'stats') this.updateStats();
+        if(tabName === 'collection') this.updateCollection();
+    },
+
+    async updateStats() {
+        const statsSpins = State.spins;
+        const statsPoints = State.points;
+        const statsHighest = State.getScore();
+
+        let divineCount = 0, realityCount = 0;
+        State.items.forEach(item => {
+            if(item.t === 'SSR') divineCount++;
+            else if(item.t === 'SR') realityCount++;
+        });
+
+        document.getElementById('stat-spins').innerText = statsSpins;
+        document.getElementById('stat-points').innerText = statsPoints;
+        document.getElementById('stat-divine').innerText = divineCount;
+        document.getElementById('stat-reality').innerText = realityCount;
+        document.getElementById('stat-highest').innerText = statsHighest + '%';
+    },
+
+    async updateCollection() {
+        const Cfg_divine = ["うんこ", "ちんこ", "まんこ", "ぱんこ", "あんこ", "さんこ", "きんこ", "わんこ", "げんこ"];
+        const Cfg_reality = ["てんき", "げんき", "りんご", "だんご", "きんご", "ぶんこ", "はんこ", "さんご"];
+
+        const collected = new Set(State.items.map(i => i.w));
+        const total = Cfg_divine.length + Cfg_reality.length;
+        const completionPercent = Math.floor((collected.size / total) * 100);
+
+        document.getElementById('completion-percent').innerText = completionPercent + '%';
+        document.getElementById('completion-text').innerText = `${collected.size}/${total}`;
+        document.getElementById('completion-fill').style.width = completionPercent + '%';
+
+        const ssrGrid = document.getElementById('ssr-grid');
+        const srGrid = document.getElementById('sr-grid');
+        ssrGrid.innerHTML = '';
+        srGrid.innerHTML = '';
+
+        Cfg_divine.forEach(word => {
+            const item = State.items.find(i => i.w === word);
+            const div = document.createElement('div');
+            div.className = `collection-item ssr ${item ? 'collected' : 'uncollected'}`;
+            div.innerHTML = `
+                <div class="item-word">${word}</div>
+                <div class="item-count">${item ? item.count + 'x' : '??'}</div>
+            `;
+            ssrGrid.appendChild(div);
+        });
+
+        Cfg_reality.forEach(word => {
+            const item = State.items.find(i => i.w === word);
+            const div = document.createElement('div');
+            div.className = `collection-item sr ${item ? 'collected' : 'uncollected'}`;
+            div.innerHTML = `
+                <div class="item-word">${word}</div>
+                <div class="item-count">${item ? item.count + 'x' : '??'}</div>
+            `;
+            srGrid.appendChild(div);
+        });
+    }
+};
+
+window.onload = () => {
+    Director.init();
+    TabSystem.init();
+};
+</script>
+</body>
+</html>
